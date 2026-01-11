@@ -16,9 +16,29 @@ st.set_page_config(
     layout="wide"
 )
 
-# Korean Font Support for Matplotlib (Windows)
-if os.name == 'nt':
+# Korean Font Support for Matplotlib
+import matplotlib.font_manager as fm
+
+# Streamlit Cloud (Linux) 환경에서 한글 폰트 설정
+# packages.txt에 fonts-nanum 추가하여 Nanum 폰트 자동 설치됨
+if os.name != 'nt':  # Linux (Streamlit Cloud)
+    # 폰트 캐시 재빌드
+    try:
+        fm._load_fontmanager(try_read_cache=False)
+    except:
+        pass
+    
+    # Nanum Gothic 폰트 설정
+    font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
+    if os.path.exists(font_path):
+        fm.fontManager.addfont(font_path)
+        plt.rc('font', family='NanumGothic')
+    else:
+        # 대안: 폰트가 없으면 기본값 유지
+        plt.rc('font', family='DejaVu Sans')
+else:  # Windows
     plt.rc('font', family='Malgun Gothic')
+
 plt.rc('axes', unicode_minus=False)
 
 # Custom Style
