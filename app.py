@@ -771,99 +771,58 @@ with tab4:
     
     st.warning("""💡 **교훈**: 많은 모델을 섞는다고 무조건 좋은 것이 아닙니다. 
     **가장 강력한 하나를 극대화**하는 것이 더 효과적일 수 있습니다.""")
-
-    # -----------------------------------------------------------------
-    # (New) Ensemble Performance Section (Displayed if available)
-    # -----------------------------------------------------------------
-    st.markdown("---")
-    st.header("🏆 앙상블 모델 성능 (RF + XGB + LGBM)")
     
-    metric_path = 'codes/ensemble_metrics.json'
-    if os.path.exists(metric_path):
-        with open(metric_path, 'r', encoding='utf-8') as f:
-            metrics = json.load(f)
+    st.divider()
+    st.markdown("### 🎯 하이퍼파라미터 튜닝 (Hyperparameter Tuning)")
+    
+    col_t1, col_t2 = st.columns([1, 2])
+    
+    with col_t1:
+        st.markdown("#### ✅ 최종 파라미터")
+        st.code("""
+params = {
+    'n_estimators': 5000,
+    'learning_rate': 0.01,
+    'max_depth': 10,
+    'min_child_weight': 1,
+    'subsample': 0.8,
+    'colsample_bytree': 0.8,
+    'tree_method': 'hist',
+    'device': 'cuda'
+}
+        """, language='python')
         
-        # 1. Summary Metrics
-        st.info(f"📅 학습 완료 시간: {metrics.get('timestamp', 'N/A')}")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="🔥 최종 앙상블 RMSE", value=f"{metrics['ensemble_rmse']:,.0f}")
-        with col2:
-            best_single_model = min(metrics['individual_rmse'], key=metrics['individual_rmse'].get)
-            best_single_rmse = metrics['individual_rmse'][best_single_model]
-            st.metric(label=f"🥇 최고 단일 모델 ({best_single_model})", value=f"{best_single_rmse:,.0f}", 
-                      delta=f"{metrics['ensemble_rmse'] - best_single_rmse:,.0f} (Improvement)")
-        
-        # 2. Individual Model Performance Chart
-        st.subheader("📊 모델별 성능 비교 (RMSE 낮을수록 좋음)")
-        rmses = metrics['individual_rmse']
-        rmses['Ensemble (Weighted)'] = metrics['ensemble_rmse']
-        
-        rmse_df = pd.DataFrame(list(rmses.items()), columns=['Model', 'RMSE'])
-        rmse_df = rmse_df.sort_values('RMSE', ascending=False)
-        
-        # Color highlight for Ensemble
-        colors = ['#d3d3d3'] * len(rmse_df)
-        rmse_df = rmse_df.reset_index(drop=True)
-        try:
-            ens_idx = rmse_df[rmse_df['Model'] == 'Ensemble (Weighted)'].index[0]
-            colors[ens_idx] = '#ff4b4b' # Red for Ensemble
-        except:
-            pass
-        
-        fig_rmse, ax_rmse = plt.subplots(figsize=(10, 4))
-        sns.barplot(data=rmse_df, x='RMSE', y='Model', palette=colors, ax=ax_rmse)
-        ax_rmse.set_xlabel("Validation RMSE (Total Price)")
-        for i, v in enumerate(rmse_df['RMSE']):
-            ax_rmse.text(v, i, f" {v:,.0f}", va='center', fontweight='bold')
-        st.pyplot(fig_rmse)
-
-        # 3. Optimal Weights Chart
-        st.subheader("⚖️ 최적 앙상블 가중치 (Optimal Weights)")
-        weights = metrics['optimal_weights']
-        weights = {k: v for k, v in weights.items() if v > 0.001}
-        
-        if weights:
-            fig_w, ax_w = plt.subplots(figsize=(6, 6))
-            ax_w.pie(weights.values(), labels=weights.keys(), autopct='%1.1f%%', 
-                     startangle=140, colors=['#66b3ff','#99ff99','#ffcc99'])
-            ax_w.set_title("Model Contribution Weights")
-            st.pyplot(fig_w)
-        else:
-            st.warning("가중치 정보를 불러올 수 없습니다.")
-
-        # ---------------------------------------------------------
-        # Experiment History Log
-        # ---------------------------------------------------------
-        st.markdown("---")
-        st.subheader("📉 실험 이력 (Experiment Log)")
-        st.markdown("다양한 하이퍼파라미터 조합에 따른 성능 변화 기록입니다.")
-        
+    with col_t2:
+        st.markdown("#### 📉 튜닝 실험 이력 (Experiment Log)")
         exp_data = {
-            "Model": ["XGBoost Only", "XGBoost Only", "XGBoost Only", "Ensemble (Mix)"],
-            "Params": ["n_est=5000, lr=0.01", "n_est=5000, lr=0.02", "n_est=3000, lr=0.02", "RF+XGB+LGBM"],
-            "RMSE (LB/Val)": ["🚀 15,114 (New Best!)", "15,469", "15,403", "❌ 17,500+"],
-            "Note": ["Transport Refinement + Clip", "Learning Rate 0.02 too high", "Good Baseline", "Overfitting"]
+            "Model": ["XGBoost Only", "XGBoost Only", "XGBoost Only", "XGBoost Only", "Random Forest Only", "Ensemble (Mix)"],
+            "Params": ["n_est=5000, lr=0.01", "n_est=5000, lr=0.02", "n_est=3000, lr=0.02", "n_est=1000, lr=0.03", "n_est=300", "RF+XGB+LGBM"],
+            "Validation RMSE": ["🚀 15,114 (Best)", "15,469", "15,403", "16,013", "16,119", "❌ 17,500+"],
+            "Note": ["Transport Refinement + Clip", "Learning Rate too high", "", "Change XGBoost", "", "Overfitting / Noise"]
         }
-        exp_df = pd.DataFrame(exp_data)
-        st.table(exp_df)
+        st.dataframe(pd.DataFrame(exp_data), hide_index=True)
 
-        st.markdown("---")
-        st.info("""
-        **💡 참고: 이 점수는 어떻게 나오나요? (Validation RMSE)**
-        
-        이 점수는 **'모의고사 점수'**입니다. 
-        단, 시계열 데이터의 특성을 반영하기 위해 무작위 분할이 아닌 **'마지막 3개월 (Time Series Split)'** 데이터를 검증 셋으로 사용했습니다.
-        
-        - **Validation Set (Last 3 Months)**: 가장 최근 경향을 테스트 (미래 예측 시뮬레이션)
-        - **Test Set**: 리더보드 제출용
-        
-        따라서 이 점수가 잘 나오면, 실제 리더보드(미래 데이터) 성적도 좋을 가능성이 높습니다.
-        """)
-        
-    else:
-        st.warning("⚠️ 앙상블 학습 결과 파일 ('ensemble_metrics.json')이 없습니다. train_ensemble.py를 먼저 실행해주세요.")
+    # Post-Competition Tuning Section
+    st.markdown("---")
+    st.subheader("🧪 대회 종료 후 추가 실험 (Post-Competition Tuning)")
+    st.warning("⚠️ `tune_xgb.py`를 통해 더 정교한 하이퍼파라미터 튜닝을 진행했으나, **대회 종료 이후**에 도출된 결과이므로 리더보드 점수는 확인할 수 없었습니다.")
+    
+    with st.expander("📄 [참고] tune_xgb.py 결과 (best_xgb_params.json) 보기"):
+        st.json({
+            "n_estimators": 6000,
+            "learning_rate": 0.03512203294979862,
+            "max_depth": 13,
+            "min_child_weight": 8,
+            "subsample": 0.8951261013582512,
+            "colsample_bytree": 0.7705988632335838,
+            "reg_alpha": 8.626653389380758,
+            "reg_lambda": 2.9783646242128565,
+            "gamma": 0.020976531536140243
+        })
+        st.caption("이 파라미터는 더 강력한 모델 복잡도를 가지며, 향후 데이터가 추가된다면 더 좋은 성능을 낼 가능성이 있습니다.")
+
+
+
 
 # -------------------------------------------------------------------------------------------
 # [6] Final Results
@@ -874,10 +833,17 @@ with tab5:
     st.balloons()
     
     col1, col2, col3 = st.columns(3)
-    col1.metric("Final Leaderboard", "15,114", "Best Score")
-    col2.metric("Validation RMSE", "12,200", "Last 3 Months")
-    col3.metric("Improvement", "1,513 ▼", "from Baseline(16,627)")
+    col1.metric("🧪 Test RMSE", "15,114.8366", "Validation")
+    col2.metric("🏆 Final RMSE", "10,960.0917", "1위 (Winner)")
+    col3.metric("📉 Improvement", "36,173", "Baseline(47,133) 대비 ▼")
     
+    st.divider()
+    st.markdown("""
+    ### 🥇 1위 달성
+    """)
+    
+    st.image("leaderboard_result.png", caption="🏆 리더보드 1위 달성 인증 (RMSE 10,960.0917)", use_container_width=True)
+
     st.divider()
     st.subheader("📊 모델이 주목한 핵심 변수 (Top Features)")
     try:
