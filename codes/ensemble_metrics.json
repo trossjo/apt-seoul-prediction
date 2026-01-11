@@ -1,0 +1,14 @@
+{
+    "timestamp": "2026-01-12 02:19:37",
+    "ensemble_rmse": 12818.624031864869,
+    "individual_rmse": {
+        "RandomForest": 0.0,
+        "XGBoost": 12818.624031864869,
+        "LightGBM": 0.0
+    },
+    "optimal_weights": {
+        "RandomForest": 0.0,
+        "XGBoost": 1.0,
+        "LightGBM": 0.0
+    }
+}
