@@ -1,5 +1,4 @@
 /code_back
-
+/data
 *.zip
 *.pem
-*.csv
