@@ -1,0 +1,8 @@
+streamlit
+pandas
+numpy
+pydeck
+scikit-learn
+matplotlib
+seaborn
+gdown

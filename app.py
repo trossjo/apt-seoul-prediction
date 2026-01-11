@@ -279,7 +279,7 @@ with tab2:
     selected_cols = []
     
     # Strategy A: Use Feature Importance if available
-    fi_path = 'feature_importance.csv'
+    fi_path = 'codes/feature_importance.csv'
     if os.path.exists(fi_path):
         try:
             fi_df = pd.read_csv(fi_path)
@@ -377,7 +377,7 @@ data['거래월'] = data['계약년월'].str[4:].astype(int)
     
     import json
     try:
-        with open('preprocessing_metadata.json', 'r', encoding='utf-8') as f:
+        with open('codes/preprocessing_metadata.json', 'r', encoding='utf-8') as f:
             meta = json.load(f)
             
         c1, c2 = st.columns(2)
@@ -732,7 +732,7 @@ with tab4:
     st.markdown("---")
     st.header("🏆 앙상블 모델 성능 (RF + XGB + LGBM)")
     
-    metric_path = 'ensemble_metrics.json'
+    metric_path = 'codes/ensemble_metrics.json'
     if os.path.exists(metric_path):
         with open(metric_path, 'r', encoding='utf-8') as f:
             metrics = json.load(f)
@@ -835,7 +835,7 @@ with tab5:
     st.divider()
     st.subheader("📊 모델이 주목한 핵심 변수 (Top Features)")
     try:
-        fi_df = pd.read_csv('feature_importance.csv')
+        fi_df = pd.read_csv('codes/feature_importance.csv')
         fig_fi = plt.figure(figsize=(10, 5))
         sns.barplot(data=fi_df.head(15), x='importance', y='feature', palette='viridis')
         plt.title("Top 15 Feature Importance")
