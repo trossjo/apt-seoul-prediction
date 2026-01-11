@@ -20,30 +20,40 @@ st.set_page_config(
 # Korean Font Support for Matplotlib
 import matplotlib.font_manager as fm
 
-# Streamlit Cloud (Linux) 환경에서 한글 폰트 설정
-# packages.txt에 fonts-nanum 추가하여 Nanum 폰트 자동 설치됨
-if os.name != 'nt':  # Linux (Streamlit Cloud)
-    import urllib.request
-    import tempfile
-    
-    # Nanum Gothic 폰트 다운로드 (GitHub raw URL)
-    font_url = "https://github.com/naver/nanumfont/raw/master/ttf/NanumGothic.ttf"
-    font_path = os.path.join(tempfile.gettempdir(), "NanumGothic.ttf")
-    
-    if not os.path.exists(font_path):
-        try:
-            urllib.request.urlretrieve(font_url, font_path)
-        except:
-            pass
-    
+@st.cache_resource
+def install_font():
+    if os.name == 'nt':
+        plt.rc('font', family='Malgun Gothic')
+        return
+
+    # Linux (Streamlit Cloud)
+    # 1. Check if font is installed via packages.txt
+    font_path = '/usr/share/fonts/truetype/nanum/NanumGothic.ttf'
     if os.path.exists(font_path):
         fm.fontManager.addfont(font_path)
         plt.rc('font', family='NanumGothic')
+        return
+
+    # 2. If not, download (Fallback)
+    import urllib.request
+    import tempfile
+    font_url = "https://github.com/naver/nanumfont/raw/master/ttf/NanumGothic.ttf"
+    temp_dir = tempfile.gettempdir()
+    download_font_path = os.path.join(temp_dir, "NanumGothic.ttf")
+    
+    if not os.path.exists(download_font_path):
+        try:
+            urllib.request.urlretrieve(font_url, download_font_path)
+        except:
+            return # Fail gracefully
+
+    if os.path.exists(download_font_path):
+        fm.fontManager.addfont(download_font_path)
+        plt.rc('font', family='NanumGothic')
     else:
         plt.rc('font', family='DejaVu Sans')
-else:  # Windows
-    plt.rc('font', family='Malgun Gothic')
 
+install_font()
 plt.rc('axes', unicode_minus=False)
 
 # Custom Style
@@ -78,28 +88,41 @@ def load_data():
     import os as _os
     
     # Google Drive에서 데이터 로드 (Streamlit Cloud 배포용)
-    # train.csv 파일 ID: 1yYgA8I-0VuQhdTAi1hQZVJ_zK9dy4Har
     train_file_id = "1yYgA8I-0VuQhdTAi1hQZVJ_zK9dy4Har"
     train_url = f"https://drive.google.com/uc?id={train_file_id}"
     
-    # 임시 파일로 다운로드 후 읽기 (대용량 파일 바이러스 스캔 우회)
     temp_dir = tempfile.gettempdir()
     train_path = _os.path.join(temp_dir, "train.csv")
     
     if not _os.path.exists(train_path):
         gdown.download(train_url, train_path, quiet=False)
     
-    train = pd.read_csv(train_path, low_memory=False)
+    # [Memory Guard] Load minimal columns for EDA & Map
+    # app.py에서 사용하는 컬럼만 로드
+    use_cols = [
+        '시군구', '아파트명', '전용면적(㎡)', '계약년월', '건축년도', '좌표X', '좌표Y', 'target'
+    ]
     
-    # Simple rename for display (Korean for Presentation)
+    # dtype 지정으로 메모리 절약
+    dtype_map = {
+        '전용면적(㎡)': 'float32',
+        '건축년도': 'float32',
+        '좌표X': 'float32',
+        '좌표Y': 'float32',
+        'target': 'int64'
+    }
+    
+    train = pd.read_csv(train_path, usecols=use_cols, dtype=dtype_map, low_memory=False)
+    
+    # Simple rename for display
     cols_mapping = {
         '시군구': '시군구',
         '아파트명': '아파트명',
         '전용면적(㎡)': '전용면적',
         '계약년월': '계약년월',
         '건축년도': '건축년도',
-        '좌표X': 'longitude', # Keep for PyDeck
-        '좌표Y': 'latitude',  # Keep for PyDeck
+        '좌표X': 'longitude', 
+        '좌표Y': 'latitude',  
         'target': '거래금액'
     }
     train = train.rename(columns=cols_mapping)
@@ -107,14 +130,12 @@ def load_data():
     # Derived
     train['평당가'] = train['거래금액'] / train['전용면적']
 
-    # Date Derivation (For Plots)
+    # Date Derivation
     train['계약년월'] = train['계약년월'].astype(str)
     train['거래년도'] = train['계약년월'].str[:4].astype(int)
     train['거래월'] = train['계약년월'].str[4:].astype(int)
     
     # Coordinates cleaning
-    train['latitude'] = pd.to_numeric(train['latitude'], errors='coerce')
-    train['longitude'] = pd.to_numeric(train['longitude'], errors='coerce')
     train = train.dropna(subset=['latitude', 'longitude'])
     
     # split sigungu for dong
