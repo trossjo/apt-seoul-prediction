@@ -13,7 +13,8 @@ import json
 st.set_page_config(
     page_title="아파트 실거래가 예측 모델 발표",
     page_icon="🏢",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
 # Korean Font Support for Matplotlib
@@ -229,7 +230,7 @@ with tab1:
                 '▼ 208 (교통 밀도, 거리 Clip 효과)'
             ]
         })
-        st.dataframe(scores, use_container_width=True)
+        st.dataframe(scores, width='stretch')
         
         st.info("💡 **Insight**: **교통 밀도 세분화(300/500/800m)**와 **거리 Clipping**이 모델의 과적합을 막고 일반화 성능을 크게 높였습니다.")
 
@@ -432,7 +433,7 @@ data['거래월'] = data['계약년월'].str[4:].astype(int)
             '구 (Gu)': ['강남구', '서초구', '송파구', '용산구', '성동구', '마포구', '광진구', '동작구', '중구', '강동구'],
             '평당가 (만원/㎡)': [1363, 1186, 1052, 1049, 869, 837, 808, 768, 763, 752]
         })
-        st.dataframe(gu_data, use_container_width=True)
+        st.dataframe(gu_data, width='stretch')
     
     with col_b:
         st.markdown("#### 🏘️ Top 10 비싼 '동' (Dong)")
@@ -441,7 +442,7 @@ data['거래월'] = data['계약년월'].str[4:].astype(int)
             '동 (Dong)': ['신문로2가', '평동', '홍파동', '압구정동', '개포동', '반포동', '입정동', '교북동', '교남동', '잠실동'],
             '평당가 (만원/㎡)': [2317, 2149, 2039, 1730, 1719, 1633, 1627, 1536, 1500, 1468]
         })
-        st.dataframe(dong_data, use_container_width=True)
+        st.dataframe(dong_data, width='stretch')
 
     st.markdown("---")
     st.subheader("🤔 왜 단순히 '동별 평균 가격'을 학습시키지 않았나?")
