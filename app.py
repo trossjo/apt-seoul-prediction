@@ -862,5 +862,13 @@ with tab5:
     3. **Future Work**: 이제 **Bayesian Optimization (Optuna)**를 활용해 XGBoost의 하이퍼파라미터를 정밀하게 튜닝하면 RMSE 14,000점대 진입도 가능할 것입니다.
     """)
 
+    st.info("""
+    🤔 **전략적 선택: 왜 이상치(Outlier)를 제거하지 않았나요?**
+    
+    1. **Real Signals**: 부동산 데이터에서 고가 아파트(강남 등)는 **삭제해야 할 노이즈가 아니라, 맞춰야 할 핵심 타겟**입니다. 이를 제거하면 모델이 고가 주택을 전혀 예측하지 못해 RMSE가 오히려 폭증합니다.
+    2. **RMSE Metric**: 평가지표가 RMSE(제곱 오차)이므로, 고가 아파트 예측 실패 시 페널티가 매우 큽니다. 따라서 모델이 Outlier까지 학습하도록 두는 것이 유리합니다.
+    3. **Tree Model Robustness**: 선형 회귀와 달리 **XGBoost**와 같은 트리 기반 모델은 이상치에 상대적으로 강건하며, 분기를 통해 이를 별도의 리프 노드로 처리할 수 있습니다.
+    """)
+
 # Footer
 st.sidebar.markdown("---")
